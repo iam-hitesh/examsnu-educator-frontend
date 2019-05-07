@@ -1,0 +1,308 @@
+import React, { Component } from 'react';
+import {Redirect} from 'react-router-dom';
+
+import {BASE_URL} from '../../../services/BaseUrl';
+import Footer from '../../../layouts/Footer';
+import Sidebar from '../../../layouts/Sidebar';
+import Navbar from '../../../layouts/Navbar';
+import {Link} from 'react-router-dom';
+import Loader from '../../../assets/img/loading.gif';
+import {cutString} from '../../../services/cutString';
+import Moment from 'moment'
+
+class allQuizzes extends Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            isAuthenticated: !!sessionStorage.getItem('examsnuDashToken'),
+            profile: JSON.parse(sessionStorage.getItem('examsnuDashProfile')),
+
+            isLoading:true,
+            error:false,
+            message:'',
+            page:1,
+
+            quizzes:[{id:1,exam:[{id:'',exam_name:'',}],exam_id:1,videos:[{id:1,title:"Maths - 1"}],created_by:"Hitesh Yadav",created_by_id:1,title:"Video - 1",alt_title_video:"V1",is_active:true,active_on:"2019-04-04T00:00:00+05:30",is_deleted:false}],
+        };
+
+        this.changePage = this.changePage.bind(this);
+        this.searchQuiz = this.searchQuiz.bind(this);
+    }
+
+    componentDidMount() {
+        document.title = "Quizzes Collection - examsnu.in";
+        if (this.state.isAuthenticated) {
+            fetch(`${BASE_URL}quizzes/?page=`+this.state.page, {
+                method: "GET",
+                headers: {
+                    Authorization: `Token ${sessionStorage.getItem('examsnuDashToken')}`
+                },
+            })
+                .then((response) => {
+                    if(!response.ok){
+                        throw new Error(response.status)
+                    }else{
+                        return response.json();
+                    }
+                })
+                .then((responseJson) => {
+                    this.setState({
+                        quizzes:responseJson,
+                        isLoading:false,
+                    })
+                })
+                .catch((error) => {
+                    this.setState({
+                        error:true,
+                        isLoading:false,
+                        message: 'Some Error Occurred, Try Again!',
+                    })
+                });
+        };
+    };
+
+    searchQuiz = (event) =>{
+        this.setState({
+            isLoading:true,
+        });
+        fetch(`${BASE_URL}search-quiz/?search=`+event.target.value, {
+            method: "GET",
+            headers: {
+                Authorization: `Token ${sessionStorage.getItem('examsnuDashToken')}`
+            },
+        })
+            .then((response) => {
+                if(!response.ok){
+                    throw new Error(response.status)
+                }else{
+                    return response.json();
+                }
+            })
+            .then((responseJson) => {
+                this.setState({
+                    quizzes:responseJson,
+                    isLoading:false,
+                })
+            })
+            .catch((error) => {
+                this.setState({
+                    error:true,
+                    isLoading:false,
+                    message: 'Some Error Occurred, Try Again!',
+                })
+            });
+    };
+
+    changePage = (event, id) => {
+        this.setState({
+            isLoading:true,
+        });
+        let page = 0;
+        if(id === 1){
+            page = this.state.page + 1;
+        }else{
+            page = this.state.page - 1;
+        }
+        fetch(`${BASE_URL}quizzes/?page=`+page, {
+            method: "GET",
+            headers: {
+                Authorization: `Token ${sessionStorage.getItem('examsnuDashToken')}`
+            },
+        })
+            .then((response) => {
+                if(!response.ok){
+                    throw new Error(response.status)
+                }else{
+                    return response.json();
+                }
+            })
+            .then((responseJson) => {
+                this.setState({
+                    quizzes:responseJson,
+                    isLoading:false,
+                    page:page,
+                })
+            })
+            .catch((error) => {
+                this.setState({
+                    error:true,
+                    isLoading:false,
+                    message: 'Some Error Occurred, Try Again!',
+                })
+            });
+    };
+    render(){
+        if(!this.state.isAuthenticated){
+            return(<Redirect to="/login"/>);
+        }
+        return(
+            <div>
+                <Sidebar/>
+                <div className="main-content">
+                    <Navbar/>
+
+
+                    <div className="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+                        <div className="container-fluid">
+                            <div className="header-body">
+                                <h2 className="headline">Quiz's Collection</h2>
+                            </div>
+                            <Link to={`/product/quiz/add`} className="btn btn-info btn-lg">Create New Quiz</Link>
+                        </div>
+                    </div>
+                    <div className="container-fluid mt--7">
+
+                        {/*Content Starts Here*/}
+
+                        <div className="row mt-5">
+                            <div className="col">
+                                <div className="card bg-default shadow">
+                                    <div className="card-header bg-transparent border-0">
+                                        <h3 className="text-white mb-0">Quiz's Collection</h3>
+                                    </div>
+                                    <div className="navbar-search mr-6 d-none d-md-flex col-lg-12">
+                                        <div className="input-group input-group-alternative">
+                                            <div className="input-group-prepend">
+                                                <span className="input-group-text"><i className="fa fa-search"></i></span>
+                                            </div>
+                                            <input
+                                                className="form-control"
+                                                placeholder="Search(Date in YYYY-MM-DD Format)"
+                                                type="text"
+                                                id="search-input"
+                                                onChange={this.searchQuiz}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/*Warning Message*/}
+                                    <div className="margin">
+                                        {this.state.message && this.state.error ? (
+                                            <div className="alert alert-danger" role="alert">
+                                                {this.state.message}
+                                            </div>
+                                        ) : (
+                                            this.state.message && !this.state.error ? (
+                                                <div className="alert alert-info" role="alert">
+                                                    {this.state.message}
+                                                </div>
+                                            ) : ''
+                                        )}
+                                    </div>
+
+                                    {/*Loader*/}
+                                    <div className="loader-justify">
+                                        <img
+                                            src={Loader}
+                                            className={!this.state.isLoading ? "hideBox" : "loader"}
+                                            alt="Loader"
+                                        />
+                                    </div>
+
+                                    {/*Videos Table*/}
+                                    <div className="table-responsive">
+                                        <table className="table align-items-center table-dark table-flush">
+                                            <thead className="thead-dark">
+                                            <tr>
+                                                <th scope="col">ID</th>
+                                                <th scope="col">Title</th>
+                                                <th scope="col">Exam</th>
+                                                <th scope="col">Is Active</th>
+                                                <th scope="col">Active On</th>
+                                                <th scope="col">Expire On</th>
+                                                <th scope="col">Created At</th>
+                                                <th scope="col">Created BY</th>
+                                                <th scope="col">Is Deleted?</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+
+
+                                            {/*Content Repeat and Loop Starts Here*/}
+                                            {
+                                                this.state.quizzes.map((quiz, index) => (
+                                                    <tr key={index}>
+                                                        <th scope="row">
+                                                            <Link to={`/product/quiz/view/${quiz.id}`} className="mb-0 text-sm">{quiz.id}</Link>
+                                                        </th>
+                                                        <th scope="row">
+                                                            <Link to={`/product/quiz/view/${quiz.id}`} className="mb-0 text-sm">
+                                                                <span className={quiz.is_deleted ? "mb-0 text-sm text-danger" : "mb-0 text-sm text-success"}>{cutString(quiz.title, 30)}</span>
+                                                            </Link>
+                                                        </th>
+                                                        <td>
+                                                            {
+                                                                quiz.exam.map((exam, index) => (
+                                                                    <span className="badge badge-pill badge-success text-white" key={index}>{exam.exam_name}</span>
+                                                                ))
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <span className={quiz.is_active ? "badge badge-pill badge-success text-white" :"badge badge-pill badge-danger text-white"}>{quiz.is_active ? "Active" : "Not Active"}</span>
+                                                        </td>
+                                                        <td>
+                                                            {Moment(quiz.active_on).format('MMMM Do YYYY h:mm:ss a')}
+                                                        </td>
+                                                        <td>
+                                                            {Moment(quiz.expire_on).format('MMMM Do YYYY h:mm:ss a')}
+                                                        </td>
+                                                        <td>
+                                                            {Moment(quiz.created_at).format('MMMM Do YYYY')}
+                                                        </td>
+                                                        <td>
+                                                            <Link to={`/author/${quiz.created_by_id}`}>{quiz.created_by}</Link>
+                                                        </td>
+                                                        <td>
+                                                            <span className={quiz.is_deleted ? "badge badge-pill badge-danger text-white" : "badge badge-pill badge-success text-white"}>{quiz.is_deleted ? "Deleted" : "Not Deleted"}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            }
+                                            {/*Content Repeat Loops ends here*/}
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="card-footer bg-default py-4">
+                                        <nav aria-label="...">
+                                            <ul className="pagination justify-content-center mb-0">
+
+                                                {this.state.page === 1 ? "" : (
+                                                    <li className="page-item">
+                                                        <button className="page-link" onClick={(event, page) => this.changePage(event, 0)}>
+                                                            <i className="fa fa-angle-left"></i>
+                                                            <span className="sr-only">Previous</span>
+                                                        </button>
+                                                    </li>
+                                                )}
+                                                {this.state.page === 0 ? "" : (
+                                                    <li className="page-item">
+                                                        <button className="page-link" onClick={(event, page) => this.changePage(event, 1)}>
+                                                            <i className="fa fa-angle-right"></i>
+                                                            <span className="sr-only">Next</span>
+                                                        </button>
+                                                    </li>
+                                                )}
+
+
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/*Content Ends Here*/}
+
+
+                        {/*Footer*/}
+                        <Footer />
+                    </div>
+                </div>
+            </div>
+        )
+    }
+};
+
+export default allQuizzes;
+
